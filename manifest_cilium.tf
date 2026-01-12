@@ -40,6 +40,12 @@ data "helm_template" "cilium_default" {
       value = var.tailscale.enabled ? "best-effort" : "native"
     },
     {
+      // When tailscale is enabled, exclude tailscale0 from Cilium device detection
+      // tailscale0 is a TUN device that doesn't support XDP programs
+      name  = "devices"
+      value = var.tailscale.enabled ? "eth+" : ""
+    },
+    {
       name  = "encryption.enabled"
       value = var.cilium_enable_encryption ? "true" : "false"
     },

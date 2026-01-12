@@ -61,12 +61,35 @@ locals {
     }
   ] : []
 
+  tailscale_extra_args = join(" ", compact([
+    var.tailscale.login_server != "" ? "--login-server=${var.tailscale.login_server}" : "",
+    length(var.tailscale.routes) > 0 ? "--advertise-routes=${join(",", var.tailscale.routes)}" : "",
+  ]))
+
   tailscale_config_patch = var.tailscale.enabled ? yamlencode({
     apiVersion = "v1alpha1"
     kind       = "ExtensionServiceConfig"
     name       = "tailscale"
+    environment = concat(
+      [
+        "TS_AUTHKEY=${var.tailscale.auth_key}",
+      ],
+      local.tailscale_extra_args != "" ? [
+        "TS_EXTRA_ARGS=${local.tailscale_extra_args}",
+      ] : [],
+      # Enable IP forwarding for subnet routing
+      length(var.tailscale.routes) > 0 ? [
+        "TS_USERSPACE=false",
+      ] : []
+    )
+  }) : null
+
+  cloudflared_config_patch = var.cloudflared.enabled ? yamlencode({
+    apiVersion = "v1alpha1"
+    kind       = "ExtensionServiceConfig"
+    name       = "cloudflared"
     environment = [
-      "TS_AUTHKEY=${var.tailscale.auth_key}",
+      "TUNNEL_TOKEN=${var.cloudflared.token}",
     ]
   }) : null
 
@@ -80,7 +103,12 @@ data "talos_machine_configuration" "control_plane" {
   kubernetes_version = var.kubernetes_version
   machine_type       = "controlplane"
   machine_secrets    = talos_machine_secrets.this.machine_secrets
-  config_patches     = concat([yamlencode(local.controlplane_yaml[each.value.name])], var.talos_control_plane_extra_config_patches, [local.tailscale_config_patch])
+  config_patches     = concat(
+    [yamlencode(local.controlplane_yaml[each.value.name])],
+    var.talos_control_plane_extra_config_patches,
+    local.tailscale_config_patch != null ? [local.tailscale_config_patch] : [],
+    local.cloudflared_config_patch != null ? [local.cloudflared_config_patch] : []
+  )
   docs               = false
   examples           = false
 }
@@ -93,7 +121,12 @@ data "talos_machine_configuration" "worker" {
   kubernetes_version = var.kubernetes_version
   machine_type       = "worker"
   machine_secrets    = talos_machine_secrets.this.machine_secrets
-  config_patches     = concat([yamlencode(local.worker_yaml[each.value.name])], var.talos_worker_extra_config_patches)
+  config_patches     = concat(
+    [yamlencode(local.worker_yaml[each.value.name])],
+    var.talos_worker_extra_config_patches,
+    local.tailscale_config_patch != null ? [local.tailscale_config_patch] : [],
+    local.cloudflared_config_patch != null ? [local.cloudflared_config_patch] : []
+  )
   docs               = false
   examples           = false
 }
@@ -160,10 +193,12 @@ locals {
     var.output_mode_config_cluster_endpoint == "cluster_endpoint" ? local.cluster_api_host_public :
     "unknown"
   )
-  kubeconfig = replace(
+  kubeconfig_raw_with_endpoint = replace(
     can(talos_cluster_kubeconfig.this[0].kubeconfig_raw) ? talos_cluster_kubeconfig.this[0].kubeconfig_raw : "",
     local.cluster_endpoint_url_internal, "https://${local.kubeconfig_host}:${local.api_port_k8s}"
   )
+  # Remove "admin@" prefix from context name for cleaner kubectx output
+  kubeconfig = replace(local.kubeconfig_raw_with_endpoint, "admin@${var.cluster_name}", var.cluster_name)
 
   kubeconfig_data = {
     host                   = "https://${local.best_public_ipv4}:${local.api_port_k8s}"

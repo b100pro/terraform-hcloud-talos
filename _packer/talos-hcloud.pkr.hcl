@@ -10,7 +10,7 @@ packer {
 
 variable "talos_version" {
   type    = string
-  default = "v1.11.0"
+  default = "v1.12.0"
 }
 
 variable "image_url_arm" {
@@ -29,8 +29,8 @@ variable "server_location" {
 }
 
 locals {
-  image_arm = var.image_url_arm != null ? var.image_url_arm : "https://factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/${var.talos_version}/hcloud-arm64.raw.xz"
-  image_x86 = var.image_url_x86 != null ? var.image_url_x86 : "https://factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/${var.talos_version}/hcloud-amd64.raw.xz"
+  image_arm = var.image_url_arm != null ? var.image_url_arm : "https://factory.talos.dev/image/f42b1e45ae6f495c11bee4f1a6c42cb4d01973742094cedf64b426fa7786194e/${var.talos_version}/hcloud-arm64.raw.xz"
+  image_x86 = var.image_url_x86 != null ? var.image_url_x86 : "https://factory.talos.dev/image/f42b1e45ae6f495c11bee4f1a6c42cb4d01973742094cedf64b426fa7786194e/${var.talos_version}/hcloud-amd64.raw.xz"
 
   # Add local variables for inline shell commands
   download_image = "wget --timeout=5 --waitretry=5 --tries=5 --retry-connrefused --inet4-only -O /tmp/talos.raw.xz "
@@ -52,7 +52,7 @@ locals {
 # Source for the Talos ARM image
 source "hcloud" "talos-arm" {
   rescue       = "linux64"
-  image        = "debian-11"
+  image        = "debian-13"
   location     = "${var.server_location}"
   server_type  = "cax11"
   ssh_username = "root"
@@ -70,9 +70,9 @@ source "hcloud" "talos-arm" {
 # Source for the Talos x86 image
 source "hcloud" "talos-x86" {
   rescue       = "linux64"
-  image        = "debian-11"
+  image        = "debian-13"
   location     = "${var.server_location}"
-  server_type  = "cx22"
+  server_type  = "cx23"
   ssh_username = "root"
 
   snapshot_name   = "Talos Linux ${var.talos_version} x86 by hcloud-talos"

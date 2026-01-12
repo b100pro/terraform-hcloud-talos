@@ -251,6 +251,11 @@ $RECYCLE.BIN/
 
 debug.tf
 
+# Cluster credentials (contain sensitive auth tokens)
+talosconfig
+kubeconfig
+tfplan
+
 .aider*
 
 .idea/copilot.data.*.xml

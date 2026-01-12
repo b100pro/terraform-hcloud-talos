@@ -1,0 +1,35 @@
+# Hetzner Cloud API token
+hcloud_token              = "your-hcloud-api-token"
+cluster_name              = "tmain"
+control_plane_count       = "3"
+datacenter_name           = "fsn1-dc14"
+control_plane_server_type = "cx23"
+talos_version             = "1.12.0"
+firewall_use_current_ip   = true
+deploy_piraeus            = true
+cilium_enable_encryption  = true
+
+kernel_modules_to_load = [
+  {
+    name       = "drbd"
+    parameters = ["usermode_helper=disabled"]
+  },
+  {
+    name = "drbd_transport_tcp"
+  },
+  {
+    name = "zfs"
+  }
+]
+
+tailscale = {
+  enabled      = true
+  auth_key     = "your-tailscale-auth-key"
+  login_server = "http://your-headscale-server:8080"
+  routes       = ["10.0.16.0/20"] # Advertise pod CIDR for bare metal access
+}
+
+cloudflared = {
+  enabled = true
+  token   = "your-cloudflared-tunnel-token"
+}

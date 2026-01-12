@@ -6,3 +6,7 @@ customization:
       - siderolabs/iscsi-tools
       - siderolabs/util-linux-tools
       - siderolabs/binfmt-misc
+      - siderolabs/cloudflared
+      - siderolabs/drbd
+      - siderolabs/tailscale
+      - siderolabs/zfs

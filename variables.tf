@@ -288,7 +288,7 @@ variable "worker_nodes" {
     - count: Number of nodes of this type
     - labels: Map of Kubernetes labels to apply to these nodes (default: {})
     - taints: List of Kubernetes taints to apply to these nodes (default: [])
-    
+
     Example:
     worker_nodes = [
       {
@@ -390,17 +390,38 @@ variable "talos_worker_extra_config_patches" {
 
 variable "tailscale" {
   type = object({
-    enabled  = optional(bool)
-    auth_key = optional(string)
+    enabled      = optional(bool)
+    auth_key     = optional(string)
+    login_server = optional(string)           # For Headscale: e.g., "http://hs.example.com:8080"
+    routes       = optional(list(string), []) # Subnet routes to advertise, e.g., ["10.0.16.0/20"]
   })
   default = {
-    enabled  = false
-    auth_key = ""
+    enabled      = false
+    auth_key     = ""
+    login_server = ""
+    routes       = []
   }
-  description = "The auth key to use for Tailscale."
+  description = "Tailscale/Headscale configuration. Set login_server for self-hosted Headscale. Set routes to advertise subnets (e.g., pod CIDR)."
   validation {
     condition     = var.tailscale.enabled == false || (var.tailscale.enabled == true && var.tailscale.auth_key != "")
     error_message = "If tailscale is enabled, an auth_key must be provided."
+  }
+}
+
+variable "cloudflared" {
+  type = object({
+    enabled = optional(bool)
+    token   = optional(string) # Cloudflare Tunnel token (from cloudflared tunnel create)
+  })
+  default = {
+    enabled = false
+    token   = ""
+  }
+  description = "Cloudflare Tunnel (cloudflared) configuration. Provide the tunnel token to enable."
+  sensitive   = true
+  validation {
+    condition     = var.cloudflared.enabled == false || (var.cloudflared.enabled == true && var.cloudflared.token != "")
+    error_message = "If cloudflared is enabled, a token must be provided."
   }
 }
 
@@ -483,6 +504,102 @@ variable "deploy_prometheus_operator_crds" {
   type        = bool
   default     = false
   description = "If true, the Prometheus Operator CRDs will be deployed."
+}
+
+# Piraeus/LINSTOR Storage
+variable "deploy_piraeus" {
+  type        = bool
+  default     = false
+  description = "If true, Piraeus/LINSTOR storage will be deployed. Requires siderolabs/drbd extension in Talos image."
+}
+
+variable "piraeus_operator_version" {
+  type        = string
+  default     = "v2.10.3"
+  description = "The version of the Piraeus Operator to deploy (git ref for kustomize)."
+}
+
+variable "piraeus_operator_chart_version" {
+  type        = string
+  default     = null
+  description = "The Helm chart version of the Piraeus Operator. If not set, latest will be used."
+}
+
+variable "piraeus_storage_pools" {
+  type = list(object({
+    name = string
+    fileThinPool = optional(object({
+      directory = string
+    }))
+    lvmThinPool = optional(object({
+      volumeGroup = string
+      thinPool    = string
+    }))
+    lvmPool = optional(object({
+      volumeGroup = string
+    }))
+    zfsPool = optional(object({
+      zPool = optional(string)
+    }))
+    zfsThinPool = optional(object({
+      zPool = optional(string)
+      source = optional(object({
+        hostDevices = optional(list(string))
+      }))
+    }))
+  }))
+  default = [
+    {
+      name = "pool1"
+      fileThinPool = {
+        directory = "/var/lib/piraeus/pool1"
+      }
+    }
+  ]
+  description = "Storage pools configuration for LINSTOR satellites. Defaults to file-based thin pool."
+}
+
+variable "piraeus_storage_classes" {
+  type = list(object({
+    name                       = string
+    is_default                 = optional(bool, false)
+    reclaim_policy             = optional(string, "Delete")
+    allow_volume_expansion     = optional(bool, true)
+    volume_binding_mode        = optional(string, "WaitForFirstConsumer")
+    fs_type                    = optional(string, "xfs")
+    storage_pool               = optional(string, "pool1")
+    placement_count            = optional(number)
+    allow_remote_volume_access = optional(bool, false)
+    layer_list                 = optional(string) # e.g., "STORAGE" to bypass DRBD, or "DRBD,STORAGE" for replication
+  }))
+  default = [
+    {
+      name            = "piraeus"
+      storage_pool    = "pool1"
+      placement_count = 3
+      is_default      = true
+    },
+    {
+      name            = "piraeus-retain"
+      storage_pool    = "pool1"
+      placement_count = 3
+      reclaim_policy  = "Retain"
+    },
+    {
+      name            = "piraeus-local"
+      storage_pool    = "pool1"
+      placement_count = 1
+      layer_list      = "STORAGE"
+    },
+    {
+      name            = "piraeus-local-retain"
+      storage_pool    = "pool1"
+      placement_count = 1
+      layer_list      = "STORAGE"
+      reclaim_policy  = "Retain"
+    }
+  ]
+  description = "Storage classes to create for Piraeus/LINSTOR. Defaults to ZFS-backed storage."
 }
 
 variable "hcloud_ccm_version" {
