@@ -8,6 +8,46 @@ output "kubeconfig" {
   sensitive = true
 }
 
+# Automatically export config files when enabled
+resource "local_file" "kubeconfig" {
+  count           = var.export_configs ? 1 : 0
+  content         = local.kubeconfig
+  filename        = "${path.root}/kubeconfig"
+  file_permission = "0600"
+}
+
+resource "local_file" "talosconfig" {
+  count           = var.export_configs ? 1 : 0
+  content         = data.talos_client_configuration.this.talos_config
+  filename        = "${path.root}/talosconfig"
+  file_permission = "0600"
+}
+
+# Manage kubeconfig with kubecm
+resource "null_resource" "kubecm" {
+  count = var.export_configs ? 1 : 0
+
+  triggers = {
+    cluster_name    = var.cluster_name
+    kubeconfig_path = local_file.kubeconfig[0].filename
+  }
+
+  # Add to kubecm on apply
+  provisioner "local-exec" {
+    command     = "yes | kubecm add -cf ${self.triggers.kubeconfig_path} --context-name ${self.triggers.cluster_name} -s 2>/dev/null || true"
+    interpreter = ["bash", "-c"]
+  }
+
+  # Remove from kubecm on destroy
+  provisioner "local-exec" {
+    when        = destroy
+    command     = "kubecm delete ${self.triggers.cluster_name} -s 2>/dev/null || true"
+    interpreter = ["bash", "-c"]
+  }
+
+  depends_on = [local_file.kubeconfig]
+}
+
 output "talos_client_configuration" {
   value     = data.talos_client_configuration.this
   sensitive = true

@@ -66,23 +66,28 @@ locals {
     length(var.tailscale.routes) > 0 ? "--advertise-routes=${join(",", var.tailscale.routes)}" : "",
   ]))
 
-  tailscale_config_patch = var.tailscale.enabled ? yamlencode({
-    apiVersion = "v1alpha1"
-    kind       = "ExtensionServiceConfig"
-    name       = "tailscale"
-    environment = concat(
-      [
-        "TS_AUTHKEY=${var.tailscale.auth_key}",
-      ],
-      local.tailscale_extra_args != "" ? [
-        "TS_EXTRA_ARGS=${local.tailscale_extra_args}",
-      ] : [],
-      # Enable IP forwarding for subnet routing
-      length(var.tailscale.routes) > 0 ? [
-        "TS_USERSPACE=false",
-      ] : []
-    )
-  }) : null
+  # Generate per-node Tailscale config patches with TS_HOSTNAME set
+  tailscale_config_patches = var.tailscale.enabled ? {
+    for name in concat([for cp in local.control_planes : cp.name], [for w in local.workers : w.name]) :
+    name => yamlencode({
+      apiVersion = "v1alpha1"
+      kind       = "ExtensionServiceConfig"
+      name       = "tailscale"
+      environment = concat(
+        [
+          "TS_AUTHKEY=${var.tailscale.auth_key}",
+          "TS_HOSTNAME=${name}",
+        ],
+        local.tailscale_extra_args != "" ? [
+          "TS_EXTRA_ARGS=${local.tailscale_extra_args}",
+        ] : [],
+        # Enable IP forwarding for subnet routing
+        length(var.tailscale.routes) > 0 ? [
+          "TS_USERSPACE=false",
+        ] : []
+      )
+    })
+  } : {}
 
   cloudflared_config_patch = var.cloudflared.enabled ? yamlencode({
     apiVersion = "v1alpha1"
@@ -103,14 +108,14 @@ data "talos_machine_configuration" "control_plane" {
   kubernetes_version = var.kubernetes_version
   machine_type       = "controlplane"
   machine_secrets    = talos_machine_secrets.this.machine_secrets
-  config_patches     = concat(
+  config_patches = concat(
     [yamlencode(local.controlplane_yaml[each.value.name])],
     var.talos_control_plane_extra_config_patches,
-    local.tailscale_config_patch != null ? [local.tailscale_config_patch] : [],
+    contains(keys(local.tailscale_config_patches), each.value.name) ? [local.tailscale_config_patches[each.value.name]] : [],
     local.cloudflared_config_patch != null ? [local.cloudflared_config_patch] : []
   )
-  docs               = false
-  examples           = false
+  docs     = false
+  examples = false
 }
 
 data "talos_machine_configuration" "worker" {
@@ -121,14 +126,14 @@ data "talos_machine_configuration" "worker" {
   kubernetes_version = var.kubernetes_version
   machine_type       = "worker"
   machine_secrets    = talos_machine_secrets.this.machine_secrets
-  config_patches     = concat(
+  config_patches = concat(
     [yamlencode(local.worker_yaml[each.value.name])],
     var.talos_worker_extra_config_patches,
-    local.tailscale_config_patch != null ? [local.tailscale_config_patch] : [],
+    contains(keys(local.tailscale_config_patches), each.value.name) ? [local.tailscale_config_patches[each.value.name]] : [],
     local.cloudflared_config_patch != null ? [local.cloudflared_config_patch] : []
   )
-  docs               = false
-  examples           = false
+  docs     = false
+  examples = false
 }
 
 # Dummy configuration generated when control_plane_count is 0 for debugging purposes

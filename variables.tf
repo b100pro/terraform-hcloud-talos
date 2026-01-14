@@ -34,6 +34,12 @@ variable "cluster_api_host" {
   default     = null
 }
 
+variable "export_configs" {
+  type        = bool
+  default     = true
+  description = "Automatically write kubeconfig and talosconfig files to the current directory after apply."
+}
+
 variable "datacenter_name" {
   type        = string
   description = <<EOF
@@ -390,21 +396,44 @@ variable "talos_worker_extra_config_patches" {
 
 variable "tailscale" {
   type = object({
-    enabled      = optional(bool)
-    auth_key     = optional(string)
-    login_server = optional(string)           # For Headscale: e.g., "http://hs.example.com:8080"
-    routes       = optional(list(string), []) # Subnet routes to advertise, e.g., ["10.0.16.0/20"]
+    enabled            = optional(bool)
+    auth_key           = optional(string)
+    login_server       = optional(string)           # For Headscale: e.g., "http://hs.example.com:8080"
+    routes             = optional(list(string), []) # Subnet routes to advertise, e.g., ["10.0.16.0/20"]
+    api_key            = optional(string, "")       # Headscale API key for cleanup (headscale apikeys create)
+    user               = optional(string, "")       # Headscale user/namespace
+    cleanup_on_destroy = optional(bool, true)       # Auto-remove nodes from Headscale on destroy
   })
   default = {
-    enabled      = false
-    auth_key     = ""
-    login_server = ""
-    routes       = []
+    enabled            = false
+    auth_key           = ""
+    login_server       = ""
+    routes             = []
+    api_key            = ""
+    user               = ""
+    cleanup_on_destroy = true
   }
-  description = "Tailscale/Headscale configuration. Set login_server for self-hosted Headscale. Set routes to advertise subnets (e.g., pod CIDR)."
+  sensitive   = true
+  description = <<-EOF
+    Tailscale/Headscale configuration.
+    - enabled: Enable Tailscale on nodes
+    - auth_key: Pre-auth key for nodes to join (headscale preauthkeys create)
+    - login_server: Headscale URL (e.g., "http://hs.example.com:8080")
+    - routes: Subnet routes to advertise (e.g., ["10.0.16.0/20"])
+    - api_key: Headscale admin API key for cleanup (headscale apikeys create)
+    - user: Headscale user/namespace where nodes are registered
+    - cleanup_on_destroy: Auto-remove nodes from Headscale on terraform destroy (default: true)
+  EOF
   validation {
     condition     = var.tailscale.enabled == false || (var.tailscale.enabled == true && var.tailscale.auth_key != "")
     error_message = "If tailscale is enabled, an auth_key must be provided."
+  }
+  validation {
+    condition = (
+      var.tailscale.api_key == "" ||
+      (var.tailscale.api_key != "" && var.tailscale.user != "" && var.tailscale.login_server != "")
+    )
+    error_message = "If tailscale.api_key is set, user and login_server must also be provided."
   }
 }
 
