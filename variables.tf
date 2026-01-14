@@ -22,6 +22,17 @@ variable "cluster_prefix" {
   description = "Prefix Hetzner Cloud resources with the cluster name."
 }
 
+variable "node_prefix" {
+  type        = string
+  default     = null
+  description = <<-EOF
+    Prefix for node names. If not set, uses cluster_name.
+    Nodes are named: <prefix>c1, <prefix>c2 (control planes) and <prefix>w1, <prefix>w2 (workers).
+    Example: node_prefix="tm" -> tmc1, tmc2, tmw1, tmw2
+    Example: node_prefix=null, cluster_name="tmain" -> tmainc1, tmainc2, tmainw1, tmainw2
+  EOF
+}
+
 variable "cluster_api_host" {
   type        = string
   description = <<EOF
