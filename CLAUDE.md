@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Terraform module for production-ready Kubernetes clusters using Talos OS on Hetzner Cloud infrastructure. Features immutable infrastructure, HA control plane, Cilium CNI, and dual CCM setup (Hetzner + Talos).
+OpenTofu module for production-ready Kubernetes clusters using Talos OS on Hetzner Cloud infrastructure. Features immutable infrastructure, HA control plane, Cilium CNI, and dual CCM setup (Hetzner + Talos).
+
+> **Note:** This module uses OpenTofu (open-source fork of Terraform) and is also compatible with Terraform >= 1.8.0.
 
 ## Key Files Structure
 - `terraform.tf` - Provider configurations (Hetzner Cloud, Talos, Helm, kubectl)
@@ -23,9 +25,9 @@ Terraform module for production-ready Kubernetes clusters using Talos OS on Hetz
 
 ```bash
 # Format and validate
-terraform fmt -recursive
-terraform init
-terraform validate
+tofu fmt -recursive
+tofu init
+tofu validate
 
 # Build Talos images (REQUIRED before first deployment)
 ./_packer/create.sh
@@ -35,12 +37,12 @@ pre-commit install
 pre-commit run --all-files
 
 # Deploy
-terraform plan
-terraform apply
+tofu plan
+tofu apply
 
 # Export configs
-terraform output --raw kubeconfig > ./kubeconfig
-terraform output --raw talosconfig > ./talosconfig
+tofu output --raw kubeconfig > ./kubeconfig
+tofu output --raw talosconfig > ./talosconfig
 
 # Access cluster
 export KUBECONFIG=./kubeconfig
@@ -48,15 +50,20 @@ kubectl get nodes
 
 # Talos management (use public endpoint)
 talosctl --talosconfig ./talosconfig --endpoint <public-ip> version
+
+# Migration from Terraform (if existing state)
+tofu init -upgrade
+tofu plan  # Verify no unexpected changes
+tofu apply # Update state file format
 ```
 
 ## Configuration
 
 ### Version Compatibility (CRITICAL)
-- `talos_version` must match between Packer and Terraform
+- `talos_version` must match between Packer and OpenTofu
 - `kubernetes_version` must be compatible with `talos_version`
 - `cilium_version` must be compatible with `kubernetes_version`
-- Terraform >= 1.8.0 required
+- OpenTofu >= 1.8.0 required (or Terraform >= 1.8.0)
 
 ### Network Architecture
 - `network_ipv4_cidr`: 10.0.0.0/16 (main network)
@@ -83,8 +90,8 @@ talosctl --talosconfig ./talosconfig --endpoint <public-ip> version
 ## Testing & Quality
 
 ```bash
-terraform fmt -recursive -check -diff
-terraform init && terraform validate
+tofu fmt -recursive -check -diff
+tofu init && tofu validate
 pre-commit run --all-files
 ```
 
@@ -98,15 +105,15 @@ The `.demo/` directory contains a test deployment configuration that:
 - Provides a working example of module usage
 
 ### Pre-commit Hooks
-- terraform_fmt
-- terraform_docs
-- terraform_tflint
-- terraform_checkov
+- tofu_fmt
+- tofu_docs
+- tofu_tflint
+- tofu_checkov
 
 ## Important Notes
 
 ### Cluster Operations
-- **Upgrades**: Use `talosctl upgrade-k8s`, NOT Terraform variables
+- **Upgrades**: Use `talosctl upgrade-k8s`, NOT OpenTofu/Terraform variables
 - **Node changes**: `user_data` or `image` changes = node recreation
 - **Access**: Always use public endpoints for talosctl from outside
 
@@ -138,7 +145,7 @@ kubectl -n kube-system exec ds/cilium -- cilium status
 ```
 
 ## CI/CD
-- **dev-experience.yml**: Terraform validation (1.8.x, 1.9.x)
+- **dev-experience.yml**: OpenTofu validation (1.8.x, 1.9.x)
 - **checkov.yml**: Security scanning
 - **release.yml**: Semantic releases
 - **Commit format**: Conventional commits enforced

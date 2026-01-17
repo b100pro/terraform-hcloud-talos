@@ -559,12 +559,6 @@ variable "piraeus_operator_version" {
   description = "The version of the Piraeus Operator to deploy (git ref for kustomize)."
 }
 
-variable "piraeus_operator_chart_version" {
-  type        = string
-  default     = null
-  description = "The Helm chart version of the Piraeus Operator. If not set, latest will be used."
-}
-
 variable "piraeus_storage_pools" {
   type = list(object({
     name = string

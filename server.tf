@@ -15,7 +15,7 @@ data "hcloud_image" "x86" {
 locals {
   cluster_prefix = var.cluster_prefix ? "${var.cluster_name}-" : ""
   # Node prefix for short node names: <prefix>c1, <prefix>w1, etc.
-  node_prefix    = coalesce(var.node_prefix, var.cluster_name)
+  node_prefix = coalesce(var.node_prefix, var.cluster_name)
 
   control_plane_image_id = (
     substr(var.control_plane_server_type, 0, 3) == "cax" ?

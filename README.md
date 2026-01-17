@@ -1,16 +1,18 @@
 <div align="center">
   <br>
-  <img src="https://github.com/hcloud-talos/terraform-hcloud-talos/blob/main/.idea/icon.png?raw=true" alt="Terraform - Hcloud - Talos" width="200"/>
-  <h1 style="margin-top: 0; padding-top: 0;">Terraform - Hcloud - Talos</h1>
+  <img src="https://github.com/hcloud-talos/terraform-hcloud-talos/blob/main/.idea/icon.png?raw=true" alt="OpenTofu - Hcloud - Talos" width="200"/>
+  <h1 style="margin-top: 0; padding-top: 0;">OpenTofu - Hcloud - Talos</h1>
   <img alt="GitHub Release" src="https://img.shields.io/github/v/release/hcloud-talos/terraform-hcloud-talos?logo=github">
 </div>
 
 ---
 
-This repository contains a Terraform module for creating a Kubernetes cluster with Talos in the Hetzner Cloud.
+This repository contains an OpenTofu module for creating a Kubernetes cluster with Talos in the Hetzner Cloud.
+
+> **Note:** This module uses [OpenTofu](https://opentofu.org/) (open-source fork of Terraform) and is also compatible with Terraform >= 1.8.0.
 
 - Talos is a modern OS for Kubernetes. It is designed to be secure, immutable, and minimal.
-- Hetzner Cloud is a cloud hosting provider with excellent Terraform support and competitive pricing.
+- Hetzner Cloud is a cloud hosting provider with excellent OpenTofu/Terraform support and competitive pricing.
 
 > [!WARNING]
 > This module is under active development. Not all features are compatible with each other yet.
@@ -103,7 +105,7 @@ This repository contains a Terraform module for creating a Kubernetes cluster wi
 
 ### Required Software
 
-- [terraform](https://www.terraform.io/downloads.html)
+- [opentofu](https://opentofu.org/docs/intro/install/) (or [terraform](https://www.terraform.io/downloads.html) >= 1.8.0)
 - [packer](https://www.packer.io/downloads)
 - [helm](https://helm.sh/docs/intro/install/)
 
@@ -122,14 +124,14 @@ This repository contains a Terraform module for creating a Kubernetes cluster wi
 
 - Create a new project in the Hetzner Cloud Console
 - Create a new API token in the project
-- You can store the token in the environment variable `HCLOUD_TOKEN` or use it in the following commands/terraform
-  files.
+- You can store the token in the environment variable `HCLOUD_TOKEN` or use it in the following commands/OpenTofu
+  configuration files.
 
 ## Usage
 
 ### 1. Build Talos Images with Packer
 
-Before deploying with Terraform, you need Talos OS images (snapshots) available in your Hetzner Cloud project. This module provides Packer configurations to build these images.
+Before deploying with OpenTofu, you need Talos OS images (snapshots) available in your Hetzner Cloud project. This module provides Packer configurations to build these images.
 
 - **Purpose:** Creates ARM and x86 Talos OS snapshots compatible with Hetzner Cloud.
 - **Location:** All Packer-related files are in the `_packer/` directory.
@@ -139,11 +141,11 @@ Before deploying with Terraform, you need Talos OS images (snapshots) available 
   ./_packer/create.sh
   ```
 - **Customization:** You can build standard Talos images or create custom images with additional system extensions using the Talos Image Factory.
-- **Versioning:** Ensure the `talos_version` used during the Packer build matches the `talos_version` variable set in your Terraform configuration to avoid potential incompatibilities.
+- **Versioning:** Ensure the `talos_version` used during the Packer build matches the `talos_version` variable set in your OpenTofu configuration to avoid potential incompatibilities.
 
 > **Detailed Instructions:** For comprehensive steps on building default images, using the Image Factory for custom extensions, and managing Talos versions (including how to override the default version), please refer to the **[`_packer/README.md`](_packer/README.md)** file.
 
-### 2. Deploy the Cluster with Terraform
+### 2. Deploy the Cluster with OpenTofu
 
 Use the module as shown in the following working minimal example:
 
@@ -153,8 +155,9 @@ Use the module as shown in the following working minimal example:
 ```hcl
 module "talos" {
   source = "hcloud-talos/talos/hcloud"
-  # Find the latest version on the Terraform Registry:
-  # https://registry.terraform.io/modules/hcloud-talos/talos/hcloud
+  # Find the latest version on:
+  # - OpenTofu Registry: https://search.opentofu.org/module/hcloud-talos/talos/hcloud
+  # - Terraform Registry: https://registry.terraform.io/modules/hcloud-talos/talos/hcloud
   version = "<latest-version>" # Replace with the latest version number
 
   talos_version = "v1.11.0" # The version of talos features to use in generated machine configurations
@@ -178,8 +181,9 @@ Or a more advanced example:
 ```hcl
 module "talos" {
   source  = "hcloud-talos/talos/hcloud"
-  # Find the latest version on the Terraform Registry:
-  # https://registry.terraform.io/modules/hcloud-talos/talos/hcloud
+  # Find the latest version on:
+  # - OpenTofu Registry: https://search.opentofu.org/module/hcloud-talos/talos/hcloud
+  # - Terraform Registry: https://registry.terraform.io/modules/hcloud-talos/talos/hcloud
   version = "<latest-version>" # Replace with the latest version number
 
   # Use versions compatible with each other and supported by the module/Talos
@@ -295,8 +299,8 @@ Then you can then run the following commands to export the kubeconfig and talosc
 
 ```bash
 # Save the configs to files
-terraform output --raw kubeconfig > ./kubeconfig
-terraform output --raw talosconfig > ./talosconfig
+tofu output --raw kubeconfig > ./kubeconfig
+tofu output --raw talosconfig > ./talosconfig
 ```
 
 You can then use `kubectl` and `talosctl` to interact with your cluster.
@@ -362,7 +366,7 @@ kernel_modules_to_load = [
 
 ## Upgrading Kubernetes
 
-The `kubernetes_version` variable in this Terraform module is used for the _initial deployment_ of your Kubernetes cluster.
+The `kubernetes_version` variable in this OpenTofu module is used for the _initial deployment_ of your Kubernetes cluster.
 It does **not** trigger in-place Kubernetes version upgrades on existing nodes.
 
 To upgrade your Kubernetes cluster, you must use the `talosctl upgrade-k8s` command.
@@ -386,10 +390,13 @@ Refer to the [official Talos documentation on upgrading Kubernetes](https://www.
 ## Known Limitations
 
 - Changes in the `user_data` (e.g. `talos_machine_configuration`) and `image` (e.g. version upgrades with `packer`) will
-  not be applied to existing nodes, because it would force a recreation of the nodes.
+  not be applied to existing nodes, because OpenTofu would force a recreation of the nodes.
 
 ## Known Issues
 
+- **OpenTofu 1.11.0-1.11.3 + Helm provider 3.x**: A bug causes "Provider produced invalid object... not wholly known"
+  errors during `tofu plan`. Use OpenTofu 1.10.x until v1.11.4 is released with the fix.
+  See [opentofu/opentofu#3675](https://github.com/opentofu/opentofu/issues/3675).
 - IPv6 dual stack is not supported by Talos yet. You can activate IPv6 with `enable_ipv6`, but it currently has no
   effect on the cluster's internal networking configuration provided by this module.
 - Setting `enable_kube_span = true` might prevent the cluster from reaching a ready state in some configurations.
@@ -402,6 +409,7 @@ Refer to the [official Talos documentation on upgrading Kubernetes](https://www.
 ## Credits
 
 - [kube-hetzner](https://github.com/kube-hetzner/terraform-hcloud-kube-hetzner) For the inspiration and the great
-  terraform module. This module is based on many ideas and code snippets from kube-hetzner.
+  OpenTofu/Terraform module. This module is based on many ideas and code snippets from kube-hetzner.
+- [OpenTofu](https://opentofu.org/) For the open-source infrastructure as code tool.
 - [Talos](https://www.talos.dev/) For the incredible OS.
 - [Hetzner Cloud](https://www.hetzner.com/cloud) For the great cloud hosting.

@@ -3,7 +3,7 @@
 This directory contains Packer configuration to build Talos OS images suitable for use with Hetzner Cloud.
 
 > [!TIP]
-> It's good practice to **always** create a `_packer/hcloud.auto.pkrvars.hcl` file to explicitly set the `talos_version`. This ensures the Packer build uses the exact Talos version you intend to deploy with Terraform, preventing potential mismatches if the default value in `talos-hcloud.pkr.hcl` is outdated or if you are using custom images from the Image Factory.
+> It's good practice to **always** create a `_packer/hcloud.auto.pkrvars.hcl` file to explicitly set the `talos_version`. This ensures the Packer build uses the exact Talos version you intend to deploy with OpenTofu, preventing potential mismatches if the default value in `talos-hcloud.pkr.hcl` is outdated or if you are using custom images from the Image Factory.
 > Your `hcloud.auto.pkrvars.hcl` would simply contain:
 >
 > ```hcl

@@ -1,5 +1,8 @@
+# OpenTofu configuration
+# This module is compatible with OpenTofu >= 1.8.0 and Terraform >= 1.8.0
+# For migration from Terraform, run: tofu init -upgrade
 terraform {
-  required_version = ">=1.8.0"
+  required_version = ">= 1.8.0"
 
   required_providers {
     hcloud = {
@@ -19,7 +22,7 @@ terraform {
 
     helm = {
       source  = "hashicorp/helm"
-      version = ">= 3.1.1"
+      version = ">= 3.0.0"
     }
 
     kubectl = {
@@ -35,6 +38,11 @@ terraform {
     local = {
       source  = "hashicorp/local"
       version = ">= 2.5.0"
+    }
+
+    null = {
+      source  = "hashicorp/null"
+      version = ">= 3.2.0"
     }
   }
 }
