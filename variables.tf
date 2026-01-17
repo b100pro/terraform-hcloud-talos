@@ -51,16 +51,15 @@ variable "export_configs" {
   description = "Automatically write kubeconfig and talosconfig files to the current directory after apply."
 }
 
-variable "datacenter_name" {
+variable "location" {
   type        = string
   description = <<EOF
-    The name of the datacenter where the cluster will be created.
-    This is used to determine the region and zone of the cluster and network.
-    Possible values: fsn1-dc14, nbg1-dc3, hel1-dc2, ash-dc1, hil-dc1
+    The Hetzner Cloud location where the cluster will be created.
+    Possible values: fsn1, nbg1, hel1, ash, hil
   EOF
   validation {
-    condition     = contains(["fsn1-dc14", "nbg1-dc3", "hel1-dc2", "ash-dc1", "hil-dc1"], var.datacenter_name)
-    error_message = "Invalid datacenter name."
+    condition     = contains(["fsn1", "nbg1", "hel1", "ash", "hil"], var.location)
+    error_message = "Invalid location. Must be one of: fsn1, nbg1, hel1, ash, hil"
   }
 }
 

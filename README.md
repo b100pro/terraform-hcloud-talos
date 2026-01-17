@@ -169,7 +169,7 @@ module "talos" {
   firewall_use_current_ip = true
 
   cluster_name    = "dummy.com"
-  datacenter_name = "fsn1-dc14"
+  location = "fsn1"
 
   control_plane_count       = 1
   control_plane_server_type = "cax11"
@@ -201,7 +201,7 @@ module "talos" {
   firewall_kube_api_source = ["your-ip"]
   firewall_talos_api_source = ["your-ip"]
 
-  datacenter_name = "fsn1-dc14"
+  location = "fsn1"
 
   control_plane_count       = 3
   control_plane_server_type = "cax11"
@@ -239,7 +239,7 @@ module "talos" {
   firewall_use_current_ip = true
 
   cluster_name    = "mixed-cluster"
-  datacenter_name = "fsn1-dc14"
+  location = "fsn1"
 
   control_plane_count       = 1
   control_plane_server_type = "cx22"
