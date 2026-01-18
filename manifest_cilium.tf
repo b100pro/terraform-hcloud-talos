@@ -30,8 +30,10 @@ data "helm_template" "cilium_default" {
       value = "true"
     },
     {
+      // Enable BPF masquerade when Tailscale is enabled to handle asymmetric routing
+      // Traffic from Tailscale to service backends on other nodes needs SNAT
       name  = "bpf.masquerade"
-      value = "false"
+      value = var.tailscale.enabled ? "true" : "false"
     },
     {
       // tailscale does not support XDP and therefore native fails. with best-effort we can fallthrough without failing!
@@ -40,10 +42,16 @@ data "helm_template" "cilium_default" {
       value = var.tailscale.enabled ? "best-effort" : "native"
     },
     {
-      // When tailscale is enabled, exclude tailscale0 from Cilium device detection
-      // tailscale0 is a TUN device that doesn't support XDP programs
+      // Include tailscale0 for service LB (TC hooks work, XDP falls back via best-effort)
+      // Empty string = auto-detect all devices
       name  = "devices"
-      value = var.tailscale.enabled ? "eth+" : ""
+      value = var.tailscale.enabled ? "eth+ tailscale0" : ""
+    },
+    {
+      // Allow external access to ClusterIP services (e.g., from Tailscale)
+      // Required for accessing services via Tailscale mesh
+      name  = "bpf.lbExternalClusterIP"
+      value = var.tailscale.enabled ? "true" : "false"
     },
     {
       name  = "encryption.enabled"

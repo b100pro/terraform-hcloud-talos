@@ -429,7 +429,7 @@ variable "tailscale" {
     - enabled: Enable Tailscale on nodes
     - auth_key: Pre-auth key for nodes to join (headscale preauthkeys create)
     - login_server: Headscale URL (e.g., "http://hs.example.com:8080")
-    - routes: Subnet routes to advertise (e.g., ["10.0.16.0/20"])
+    - routes: Subnet routes to advertise (e.g., ["10.0.16.0/20", "10.0.8.0/21"] for pod and service CIDRs)
     - api_key: Headscale admin API key for cleanup (headscale apikeys create)
     - user: Headscale user/namespace where nodes are registered
     - cleanup_on_destroy: Auto-remove nodes from Headscale on terraform destroy (default: true)

@@ -26,7 +26,7 @@ tailscale = {
   enabled      = true
   auth_key     = "your-preauth-key"                  # headscale preauthkeys create --user default
   login_server = "http://your-headscale-server:8080"
-  routes       = ["10.0.16.0/20"]                    # Advertise pod CIDR for bare metal access
+  routes       = ["10.0.16.0/20", "10.0.8.0/21"]     # Pod + Service CIDRs for full cluster access
   # Optional: Automatic cleanup of Headscale nodes on terraform destroy
   # Requires: curl, jq, and network access to Headscale API
   api_key            = "your-headscale-api-key"     # headscale apikeys create --expiration 365d
